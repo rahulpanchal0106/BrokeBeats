@@ -1,0 +1,441 @@
+"use client"
+
+import { useState, useRef, useEffect } from "react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle } from "lucide-react"
+import { Slider } from "@/components/ui/slider"
+import { Button } from "@/components/ui/button"
+import TrackList from "@/components/track-list"
+import { cn } from "@/lib/utils"
+
+interface Track {
+  id: number
+  title: string
+  artist: string
+  duration: number
+  url: string
+}
+
+// Background images
+const backgroundImages = [
+  "https://img.freepik.com/premium-photo/illustration-girl-sitting-balcony-with-her-cat-watching-sunset_1260208-167.jpg?semt=ais_hybrid?height=1080&width=1920",
+  "https://img.freepik.com/premium-photo/illustration-girl-sitting-balcony-with-her-cat-watching-sunset_1260208-167.jpg?semt=ais_hybrid?height=1080&width=1920&text=Aesthetic+1",
+  "/placeholder.svg?height=1080&width=1920&text=Aesthetic+2",
+  "/placeholder.svg?height=1080&width=1920&text=Aesthetic+3",
+]
+
+export default function MusicPlayer() {
+  const [tracks, setTracks] = useState<Track[]>([])
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
+  const [isPlaying, setIsPlaying] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [volume, setVolume] = useState(80)
+  const [isMuted, setIsMuted] = useState(false)
+  const [shuffle, setShuffle] = useState(false)
+  const [repeat, setRepeat] = useState(false)
+  const [backgroundIndex, setBackgroundIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [isOffline, setIsOffline] = useState(false)
+
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const currentTrack = tracks[currentTrackIndex]
+
+  // Add offline detection
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    // Set initial state
+    setIsOffline(!navigator.onLine)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
+
+  // Update fetchTracks to handle offline state
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        const response = await fetch('/api/music')
+        if (!response.ok) {
+          throw new Error('Failed to fetch music files')
+        }
+        const data = await response.json()
+        setTracks(data)
+      } catch (err) {
+        console.error('Error fetching tracks:', err)
+        // Don't show error if we're offline, just use cached tracks
+        if (!isOffline) {
+          setError('Failed to load music library')
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchTracks()
+  }, [isOffline])
+
+  // Change background image every 30 seconds when playing
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setBackgroundIndex((prev) => (prev + 1) % backgroundImages.length)
+      }, 30000)
+    }
+
+    return () => clearInterval(interval)
+  }, [isPlaying])
+
+  // Handle track changes
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !currentTrack) return
+
+    const handleTrackChange = async () => {
+      setIsLoading(true)
+      setError(null)
+      audio.src = currentTrack.url
+      setCurrentTime(0)
+      
+      try {
+        await audio.load()
+      } catch (err) {
+        console.error('Error loading track:', err)
+        setError('Failed to load track')
+      }
+    }
+
+    handleTrackChange()
+  }, [currentTrackIndex])
+
+  // Handle play/pause
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio || !currentTrack || isLoading) return
+
+    if (isPlaying) {
+      const playPromise = audio.play()
+      if (playPromise !== undefined) {
+        playPromise.catch(error => {
+          console.error('Error playing audio:', error)
+          setError('Failed to play audio. Please check if the file exists and is accessible.')
+          setIsPlaying(false)
+        })
+      }
+    } else {
+      audio.pause()
+    }
+  }, [isPlaying, currentTrackIndex, isLoading])
+
+  // Handle audio loading and errors
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleLoadStart = () => {
+      setIsLoading(true)
+      setError(null)
+    }
+
+    const handleCanPlay = () => {
+      setIsLoading(false)
+      setError(null)
+      if (isPlaying) {
+        audio.play().catch(error => {
+          console.error('Error playing audio:', error)
+          setError('Failed to play audio')
+          setIsPlaying(false)
+        })
+      }
+    }
+
+    const handleError = () => {
+      setIsLoading(false)
+      setError(`Failed to load audio: ${audio.error?.message || 'Unknown error'}`)
+      setIsPlaying(false)
+    }
+
+    const handleLoadedMetadata = () => {
+      if (currentTrack) {
+        setTracks(prevTracks => 
+          prevTracks.map((track, index) => 
+            index === currentTrackIndex 
+              ? { ...track, duration: audio.duration }
+              : track
+          )
+        )
+      }
+    }
+
+    audio.addEventListener('loadstart', handleLoadStart)
+    audio.addEventListener('canplay', handleCanPlay)
+    audio.addEventListener('error', handleError)
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+
+    return () => {
+      audio.removeEventListener('loadstart', handleLoadStart)
+      audio.removeEventListener('canplay', handleCanPlay)
+      audio.removeEventListener('error', handleError)
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    }
+  }, [currentTrackIndex, isPlaying])
+
+  // Handle audio time updates
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime)
+    }
+
+    const handleEnded = () => {
+      handleTrackEnd()
+    }
+
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+    audio.addEventListener('ended', handleEnded)
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('ended', handleEnded)
+    }
+  }, [currentTrackIndex])
+
+  // Handle volume changes
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    audio.volume = isMuted ? 0 : volume / 100
+  }, [volume, isMuted])
+
+  const handleTrackEnd = () => {
+    if (repeat) {
+      const audio = audioRef.current
+      if (audio) {
+        audio.currentTime = 0
+        audio.play()
+      }
+      return
+    }
+
+    if (shuffle) {
+      const randomIndex = Math.floor(Math.random() * tracks.length)
+      setCurrentTrackIndex(randomIndex)
+    } else {
+      setCurrentTrackIndex((prev) => (prev + 1) % tracks.length)
+    }
+  }
+
+  const togglePlay = () => {
+    setIsPlaying(!isPlaying)
+  }
+
+  const handlePrevious = () => {
+    setCurrentTrackIndex((prev) => (prev === 0 ? tracks.length - 1 : prev - 1))
+    setCurrentTime(0)
+  }
+
+  const handleNext = () => {
+    setCurrentTrackIndex((prev) => (prev + 1) % tracks.length)
+    setCurrentTime(0)
+  }
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted)
+  }
+
+  const toggleShuffle = () => {
+    setShuffle(!shuffle)
+  }
+
+  const toggleRepeat = () => {
+    setRepeat(!repeat)
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const handleTrackSelect = (index: number) => {
+    // Only pause if we're not selecting the currently playing track
+    if (currentTrackIndex !== index) {
+      setCurrentTrackIndex(index);
+      setCurrentTime(0);
+    }
+    // Always ensure playback starts (or continues) after selection
+    setIsPlaying(true);
+  };
+
+  const handleSeek = (value: number[]) => {
+    const audio = audioRef.current
+    if (!audio) return
+    audio.currentTime = value[0]
+    setCurrentTime(value[0])
+  }
+
+  return (
+    <div className="relative flex flex-col h-screen overflow-y-auto">
+      {/* Background Image */}
+      <div
+        className="absolute inset-0 z-0 transition-opacity duration-1000"
+        style={{
+          backgroundImage: `url(${backgroundImages[backgroundIndex]})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          opacity: 0.3,
+        }}
+      />
+
+      {/* Content Container */}
+      <div className="relative z-10 flex flex-col h-full p-6 md:p-10">
+        <header className="mb-8 flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">BrokeBeats</h1>
+          <Button variant="ghost" asChild>
+            <a href="/download">Download Music</a>
+          </Button>
+        </header> 
+
+        <div className="flex flex-col md:flex-row gap-8 flex-1 ">
+          {/* Now Playing Section */}
+          <div className="flex-1 flex flex-col justify-center items-center">
+            <div className="text-center mb-12 space-y-4">
+              <h2 className="text-5xl font-bold tracking-tighter">
+                {isLoading ? 'Loading...' : currentTrack?.title || 'No Track Selected'}
+              </h2>
+              <p className="text-2xl text-gray-400">
+                {currentTrack?.artist || 'Unknown Artist'}
+              </p>
+              {error && <p className="text-sm text-red-400">{error}</p>}
+            </div>
+
+            {/* Progress Bar */}
+            <div className="w-full max-w-xl mb-8">
+              <Slider
+                value={[currentTime]}
+                max={currentTrack?.duration || 0}
+                step={1}
+                onValueChange={handleSeek}
+                className="mb-2"
+              />
+              <div className="flex justify-between text-sm text-gray-400">
+                <span>{formatTime(currentTime)}</span>
+                <span>{formatTime(currentTrack?.duration || 0)}</span>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-center gap-6">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleShuffle}
+                className={cn("rounded-full", shuffle ? "text-primary" : "text-gray-400")}
+                disabled={isLoading || !currentTrack}
+              >
+                <Shuffle className="h-5 w-5" />
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handlePrevious} 
+                className="rounded-full h-12 w-12"
+                disabled={isLoading || !currentTrack}
+              >
+                <SkipBack className="h-6 w-6" />
+              </Button>
+
+              <Button
+                variant="default"
+                size="icon"
+                onClick={togglePlay}
+                className="rounded-full h-16 w-16 bg-primary hover:bg-primary/90"
+                disabled={isLoading || !currentTrack}
+              >
+                {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8 ml-1" />}
+              </Button>
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleNext} 
+                className="rounded-full h-12 w-12"
+                disabled={isLoading || !currentTrack}
+              >
+                <SkipForward className="h-6 w-6" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleRepeat}
+                className={cn("rounded-full", repeat ? "text-primary" : "text-gray-400")}
+                disabled={isLoading || !currentTrack}
+              >
+                <Repeat className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Volume Control */}
+            <div className="flex items-center gap-2 mt-8">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={toggleMute} 
+                className="rounded-full"
+                disabled={isLoading || !currentTrack}
+              >
+                {isMuted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+              </Button>
+              <Slider
+                value={[isMuted ? 0 : volume]}
+                max={100}
+                step={1}
+                onValueChange={(value) => setVolume(value[0])}
+                className="w-32"
+                disabled={isLoading || !currentTrack}
+              />
+            </div>
+          </div>
+
+          {/* Track List */}
+          <TrackList
+            tracks={tracks}
+            currentTrackIndex={currentTrackIndex}
+            onTrackSelect={handleTrackSelect}
+            isPlaying={isPlaying}
+            isLoading={isLoading}
+          />
+        </div>
+      </div>
+
+      {/* Audio element */}
+      <audio 
+        ref={audioRef} 
+        className="hidden"
+        preload="auto"
+        crossOrigin="anonymous"
+      />
+
+      {/* Add offline indicator */}
+      {isOffline && (
+        <div className="fixed top-4 right-4 bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-medium">
+          Offline Mode
+        </div>
+      )}
+    </div>
+  )
+}
+
