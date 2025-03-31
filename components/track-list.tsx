@@ -46,7 +46,7 @@ export default function TrackList({ tracks, currentTrackIndex, onTrackSelect, is
         ) : (
           tracks.map((track, index) => (
             <div
-              key={track.id}
+              key={`${track.id || 'track'}-${index}`}
               onClick={() => onTrackSelect(index)}
               className={cn(
                 "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",

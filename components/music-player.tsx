@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle } from "lucide-react"
+import { Play, Pause, SkipBack, SkipForward, Volume2, VolumeX, Repeat, Shuffle, Menu, X } from "lucide-react"
 import { Slider } from "@/components/ui/slider"
 import { Button } from "@/components/ui/button"
 import TrackList from "@/components/track-list"
@@ -13,14 +13,24 @@ interface Track {
   artist: string
   duration: number
   url: string
+  artwork?: string
 }
 
-// Background images
+// Background images with placeholder API
 const backgroundImages = [
   "https://img.freepik.com/premium-photo/illustration-girl-sitting-balcony-with-her-cat-watching-sunset_1260208-167.jpg?semt=ais_hybrid?height=1080&width=1920",
-  "https://img.freepik.com/premium-photo/illustration-girl-sitting-balcony-with-her-cat-watching-sunset_1260208-167.jpg?semt=ais_hybrid?height=1080&width=1920&text=Aesthetic+1",
-  "/placeholder.svg?height=1080&width=1920&text=Aesthetic+2",
-  "/placeholder.svg?height=1080&width=1920&text=Aesthetic+3",
+  "https://wallpapers.com/images/hd/lofi-background-s07yfutvxbplhmng.jpg",
+  "https://c4.wallpaperflare.com/wallpaper/908/34/383/lofi-digital-anthro-hd-wallpaper-preview.jpg",
+  "https://a-static.besthdwallpaper.com/balcony-lofi-wallpaper-1600x600-106546_84.jpg",
+  "/bg/ghibli-1.gif",
+  "/bg/ghibly-3.gif",
+  "/bg/lofi-1.gif",
+  "/bg/ghibli-2.jpg",
+  "/bg/pixal-1.jpg",
+  "/bg/pixel-2.jpg",
+  "/bg/pixel-3.jpg",
+  "/bg/pixel5.gif",
+  "/bg/sharp-1.gif",
 ]
 
 export default function MusicPlayer() {
@@ -36,6 +46,8 @@ export default function MusicPlayer() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOffline, setIsOffline] = useState(false)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const currentTrack = tracks[currentTrackIndex]
@@ -81,13 +93,24 @@ export default function MusicPlayer() {
     fetchTracks()
   }, [isOffline])
 
-  // Change background image every 30 seconds when playing
+  // Improved background image transition every 30 seconds when playing
   useEffect(() => {
     let interval: NodeJS.Timeout
 
     if (isPlaying) {
       interval = setInterval(() => {
-        setBackgroundIndex((prev) => (prev + 1) % backgroundImages.length)
+        // Start transition
+        setIsTransitioning(true)
+        
+        // After 1.5 seconds (duration of fade out), change the background
+        setTimeout(() => {
+          setBackgroundIndex((prev) => (prev + 1) % backgroundImages.length)
+          
+          // After changing the background, wait a bit and start fade in
+          setTimeout(() => {
+            setIsTransitioning(false)
+          }, 100)
+        }, 400)
       }, 30000)
     }
 
@@ -285,29 +308,86 @@ export default function MusicPlayer() {
     setCurrentTime(value[0])
   }
 
+  // Force a background change
+  const changeBackground = () => {
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      setBackgroundIndex((prev) => (prev + 1) % backgroundImages.length);
+      
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 100);
+    }, 1500);
+  };
+
   return (
-    <div className="relative flex flex-col h-screen overflow-y-auto">
-      {/* Background Image */}
-      <div
-        className="absolute inset-0 z-0 transition-opacity duration-1000"
-        style={{
-          backgroundImage: `url(${backgroundImages[backgroundIndex]})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          opacity: 0.3,
-        }}
-      />
+    <div className="flex flex-col h-full">
+      {/* Background wallpapers with smooth transitions */}
+      <div className="absolute inset-0 -z-10 overflow-hidden">
+        {backgroundImages.map((image, index) => (
+          <div
+            key={`background-${index}`}
+            className={cn(
+              "absolute inset-0 transition-all duration-1500 ease-in-out",
+              backgroundIndex === index 
+                ? isTransitioning 
+                  ? "opacity-0 scale-105"
+                  : "opacity-100 scale-100"
+                : "opacity-0 scale-110"
+            )}
+            style={{
+              backgroundImage: `url(${image})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              filter: 'brightness(0.7)',
+              transitionProperty: 'opacity, transform',
+            }}
+          />
+        ))}
+      </div>
 
       {/* Content Container */}
       <div className="relative z-10 flex flex-col h-full p-6 md:p-10">
-        <header className="mb-8 flex justify-between items-center">
-          <h1 className="text-3xl font-bold tracking-tight">BrokeBeats</h1>
-          <Button variant="ghost" asChild>
-            <a href="/download">Download Music</a>
-          </Button>
-        </header> 
+        <header className="mb-8 flex justify-between items-center px-4 py-2 text-white">
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">BrokeBeats</h1>
+          
+          {/* Desktop Menu */}
+          <nav className="hidden md:flex items-center gap-4">
+            <Button variant="ghost" size="sm" onClick={changeBackground}>
+              Change Background
+            </Button>
+            <Button variant="ghost" asChild>
+              <a href="/download">Download Music</a>
+            </Button>
+          </nav>
 
-        <div className="flex flex-col md:flex-row gap-8 flex-1 ">
+          {/* Mobile Menu Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          >
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </Button>
+        </header>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden fixed top-20 right-6 bg-background/95 backdrop-blur-sm rounded-lg shadow-lg p-4 z-50">
+            <div className="flex flex-col gap-2">
+              <Button variant="ghost" size="sm" onClick={changeBackground} className="w-full justify-start">
+                Change Background
+              </Button>
+              <Button variant="ghost" asChild className="w-full justify-start">
+                <a href="/download">Download Music</a>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col md:flex-row gap-8 flex-1">
           {/* Now Playing Section */}
           <div className="flex-1 flex flex-col justify-center items-center">
             <div className="text-center mb-12 space-y-4">
@@ -438,4 +518,3 @@ export default function MusicPlayer() {
     </div>
   )
 }
-

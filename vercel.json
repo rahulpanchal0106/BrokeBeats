@@ -7,7 +7,7 @@
     }
   ],
   "env": {
-    "CONVERTER_SERVER_URL": "@converter_server_url"
+    "CONVERTER_SERVER_URL": "https://due-indianapolis-americans-fine.trycloudflare.com"
   },
   "headers": [
     {
