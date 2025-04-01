@@ -21,6 +21,15 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  async rewrites() {
+    return [
+      {
+        source: '/converter/:path*',
+        destination: 'https://ni-exit-symphony-sheer.trycloudflare.com/:path*',
+        basePath: false
+      },
+    ]
+  }
 }
 
 mergeConfig(nextConfig, userConfig)
