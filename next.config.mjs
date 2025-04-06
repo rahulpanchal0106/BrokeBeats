@@ -20,12 +20,25 @@ const nextConfig = {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
+    serverComponentsExternalPackages: ['cheerio', 'yt-search'],
+  },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: '*' },
+        ],
+      },
+    ]
   },
   async rewrites() {
     return [
       {
         source: '/converter/:path*',
-        destination: 'https://ni-exit-symphony-sheer.trycloudflare.com/:path*',
+        destination: `${process.env.NEXT_PUBLIC_CONVERTER_API_BASE_URL}/:path*`,
         basePath: false
       },
     ]

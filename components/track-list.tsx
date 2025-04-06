@@ -9,6 +9,7 @@ interface Track {
   artist: string
   duration: number
   url: string
+  bitrate: string
 }
 
 interface TrackListProps {
@@ -27,14 +28,13 @@ export default function TrackList({ tracks, currentTrackIndex, onTrackSelect, is
   }
 
   return (
-    <div className="space-y-4 w-full md:w-96 bg-black/50 backdrop-blur-md rounded-xl h-[75vh] overflow-hidden flex flex-col justify-start">
-      <div className="text-xl px-6 pt-2 pb-0 font-semibold backdrop-blur-md z-10">
-        <p className="py-2">
-          Your Library
-        </p>
-        <hr />
+    <div className="w-full md:w-96 bg-black/50 backdrop-blur-md rounded-xl h-[75vh] flex flex-col">
+      <div className="sticky top-0 bg-black/70 backdrop-blur-md px-4 py-3 rounded-t-xl z-10">
+        <h2 className="text-xl font-semibold">Your Library</h2>
+        <div className="h-px bg-gray-800 mt-2"></div>
       </div>
-      <div className="space-y-1 h-full overflow-y-auto px-6">
+
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent px-2">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-400">Loading tracks...</p>
@@ -44,24 +44,24 @@ export default function TrackList({ tracks, currentTrackIndex, onTrackSelect, is
             <p className="text-gray-400">No tracks found</p>
           </div>
         ) : (
-          tracks.map((track, index) => (
-            <div
-              key={`${track.id || 'track'}-${index}`}
-              onClick={() => onTrackSelect(index)}
-              className={cn(
-                "flex items-center justify-between p-3 rounded-lg cursor-pointer transition-colors",
-                index === currentTrackIndex ? "bg-primary/20 text-primary" : "hover:bg-white/5",
-              )}
-            >
-              <div className="flex items-center gap-3">
+          <div className="space-y-1 p-2">
+            {tracks.map((track, index) => (
+              <div
+                key={`${track.id || "track"}-${index}`}
+                onClick={() => onTrackSelect(index)}
+                className={cn(
+                  "flex items-center p-3 rounded-lg cursor-pointer transition-colors",
+                  index === currentTrackIndex ? "bg-primary/20 text-primary" : "hover:bg-white/5",
+                )}
+              >
                 <div
                   className={cn(
-                    "w-8 h-8 rounded-md flex items-center justify-center",
+                    "min-w-8 h-8 rounded-md flex items-center justify-center mr-3",
                     index === currentTrackIndex ? "bg-primary text-primary-foreground" : "bg-black/30",
                   )}
                 >
                   {index === currentTrackIndex && isPlaying ? (
-                    <span className="flex items-center justify-center">
+                    <div className="flex items-center justify-center">
                       <span className="sr-only">Now playing</span>
                       <span className="flex space-x-1">
                         {[1, 2, 3].map((bar) => (
@@ -75,21 +75,31 @@ export default function TrackList({ tracks, currentTrackIndex, onTrackSelect, is
                           />
                         ))}
                       </span>
-                    </span>
+                    </div>
                   ) : (
                     <Music className="h-4 w-4" />
                   )}
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-medium">{track.title}</span>
-                  <span className="text-sm text-gray-400">{track.artist}</span>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col">
+                    <span className="font-medium truncate">{track.title}</span>
+                    <span className="text-sm text-gray-400 truncate">{track.artist}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-end ml-2 min-w-fit">
+                  <span className="text-sm text-gray-400">{formatTime(track.duration)}</span>
+                  {track.bitrate && track.bitrate !== "NaN" && (
+                    <span className="text-xs text-gray-500">{track.bitrate} kbps</span>
+                  )}
                 </div>
               </div>
-              <span className="text-sm text-gray-400">{formatTime(track.duration)}</span>
-            </div>
-          ))
+            ))}
+          </div>
         )}
       </div>
     </div>
   )
 }
+

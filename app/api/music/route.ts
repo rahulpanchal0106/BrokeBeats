@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 import * as mm from 'music-metadata'
+import { MongoClient } from 'mongodb'
 
 interface Metadata {
   [key: string]: {
@@ -9,6 +10,8 @@ interface Metadata {
     artist: string
   }
 }
+
+const uri = process.env.MONGODB_URI!
 
 // Function to get metadata
 function getMetadata(): Metadata {
@@ -37,6 +40,21 @@ async function getAudioDuration(filePath: string): Promise<number> {
   }
 }
 
+// Function to fetch track data from the database
+async function fetchTrackData(videoId: string) {
+  const client = await MongoClient.connect(uri)
+  const db = client.db() // Replace with your database name
+  const collection = db.collection('tracks')
+
+  // Find track by videoId in filepath
+  const trackData = await collection.findOne({
+    filepath: { $regex: videoId, $options: 'i' } // Case-insensitive search for videoId in filepath
+  })
+
+  client.close()
+  return trackData
+}
+
 export async function GET() {
   try {
     const musicDir = path.join(process.cwd(), 'public', 'music')
@@ -54,22 +72,27 @@ export async function GET() {
 
     // Read all files in the music directory
     const files = fs.readdirSync(musicDir)
-    const musicFiles = files
+    const musicFiles = (await Promise.all(files
       .filter(file => file.endsWith('.mp3'))
-      .map(file => {
+      .map(async file => {
         const filePath = path.join(musicDir, file)
         const stats = fs.statSync(filePath)
         const fileMetadata = metadata[file] || { title: file.replace('.mp3', ''), artist: 'Unknown Artist' }
-
+        
+        // Fetch track data from the database
+        const trackData = await fetchTrackData(file.replace('.mp3', ''));
+        console.log("&&&&&&&&&& ",trackData)
+        
         return {
           id: parseInt(file.replace('.mp3', '')),
-          title: fileMetadata.title,
-          artist: fileMetadata.artist,
-          duration: 0, // This will be updated by the client when the audio loads
+          title: trackData?.title || fileMetadata.title,
+          artist: trackData?.author || fileMetadata.artist,
+          bitrate: trackData?.bitrate || "NaN",
+          duration: trackData?.length || 0, // This will be updated by the client when the audio loads
           url: `/music/${file}`
         }
       })
-      .sort((a, b) => a.title.localeCompare(b.title))
+    )).sort((a, b) => a.title.localeCompare(b.title))
 
     return NextResponse.json(musicFiles)
   } catch (error) {

@@ -75,7 +75,7 @@ export async function GET(
     }
 
     // If file doesn't exist, fetch it from the converter server
-    const converterUrl = process.env.CONVERTER_SERVER_URL || 'https://ni-exit-symphony-sheer.trycloudflare.com                                          '
+    const converterUrl = process.env.CONVERTER_SERVER_URL
     const response = await fetch(`${converterUrl}/files/${filename}`)
     
     if (!response.ok) {
