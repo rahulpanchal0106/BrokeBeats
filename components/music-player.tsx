@@ -70,30 +70,42 @@ export default function MusicPlayer() {
   }, [])
 
   // Update fetchTracks to handle offline state
-  useEffect(() => {
-    const fetchTracks = async () => {
-      try {
-        const response = await fetch('/api/music')
-        if (!response.ok) {
-          throw new Error('Failed to fetch music files')
-        }
-        const data = await response.json()
-        setTracks(data)
-        alert(`Tracks: ${data}`)
-      } catch (err) {
-        console.error('Error fetching tracks:', err)
-        // Don't show error if we're offline, just use cached tracks
-        if (!isOffline) {
-          setError('Failed to load music library')
-        }
-      } finally {
-        setIsLoading(false)
+  // Update the fetchTracks function in your useEffect:
+useEffect(() => {
+  const fetchTracks = async () => {
+    setIsLoading(true);
+    console.log("Attempting to fetch tracks from /api/music");
+    
+    try {
+      const response = await fetch('/api/music');
+      console.log("Fetch response status:", response.status);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch music files: ${response.status}`);
       }
+      
+      const data = await response.json();
+      console.log("Tracks fetched successfully:", data);
+      
+      if (!Array.isArray(data) || data.length === 0) {
+        console.warn("API returned empty or non-array data");
+      }
+      
+      setTracks(data);
+    } catch (err) {
+      console.error('Error fetching tracks:', err);
+      
+      // Don't show error if we're offline, just use cached tracks
+      if (!isOffline) {
+        setError(`Failed to load music library: ${err.message}`);
+      }
+    } finally {
+      setIsLoading(false);
     }
+  };
 
-    fetchTracks()
-  }, [isOffline])
-
+  fetchTracks();
+}, [isOffline]);
   // Improved background image transition every 30 seconds when playing
   useEffect(() => {
     let interval: NodeJS.Timeout
