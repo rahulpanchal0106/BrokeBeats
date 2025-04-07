@@ -59,7 +59,7 @@ async function fetchTrackData(videoId: string) {
 }
 
 
-const uri = process.env.MONGODB_URI!
+//onst uri = process.env.MONGODB_URI!
 
 export async function GET(req: NextRequest) {
   try {
