@@ -26,22 +26,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // NEW
 
-  useEffect(() => {
-    const storedToken = localStorage.getItem('spotify_access_token');
-    const storedUser = localStorage.getItem('spotify_user');
+ useEffect(() => {
+  const storedToken = localStorage.getItem('spotify_access_token');
+  const storedUser = localStorage.getItem('spotify_user');
 
-    if (storedToken) {
-      setAccessToken(storedToken);
-    }
+  if (storedToken) {
+    setAccessToken(storedToken);
+
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
       setUserData(parsedUser);
+      setLoading(false);
+    } else {
+      // No stored user, fetch it from Spotify
+      fetch('https://api.spotify.com/v1/me', {
+        headers: {
+          Authorization: `Bearer ${storedToken}`,
+        },
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error('Failed to fetch user');
+          return res.json();
+        })
+        .then((fetchedUser: User) => {
+          setUser(fetchedUser);
+          setUserData(fetchedUser);
+          localStorage.setItem('spotify_user', JSON.stringify(fetchedUser));
+        })
+        .catch((err) => {
+          console.error('Failed to fetch Spotify user:', err);
+          logout(); // fallback on failure
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
-
-    setLoading(false); // Once restored
-  }, []);
-
+  } else {
+    setLoading(false); // No token, nothing to do
+  }
+}, []);
   const login = () => {
     const scope = spotifyConfig.scopes.join(' ');
     const params = new URLSearchParams({
