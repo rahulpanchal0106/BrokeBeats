@@ -16,16 +16,15 @@ interface AuthContextType {
   setAccessToken: (token: string | null) => void;
   userData: User | null;
   setUserData: (userData: User | null) => void;
-  logout: () => void; // Export logout function in context
-  login: () => void; // Export logout function in context
+  logout: () => void;
+  login: () => void;
+  loading: boolean; // add this line
 }
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // NEW
 
   useEffect(() => {
     const storedToken = localStorage.getItem('spotify_access_token');
@@ -39,6 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(parsedUser);
       setUserData(parsedUser);
     }
+
+    setLoading(false); // Once restored
   }, []);
 
   const login = () => {
@@ -73,14 +74,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userData,
         setUserData,
         login,
-        logout // Include logout in the context value
+        logout,
+        loading // include it in context
       }}
     >
-      {children}
+      {!loading && children} {/* render children only when ready */}
     </AuthContext.Provider>
   );
 }
-
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
