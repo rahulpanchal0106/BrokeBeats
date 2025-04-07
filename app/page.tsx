@@ -11,7 +11,9 @@ export default function Home() {
 
   useEffect(() => {
     const checkTokenExpiration = () => {
-      if (!accessToken) {
+
+      alert(`AT: ${accessToken}, User: ${user}`)
+      if (!user) {
         setIsExpired(true); // No access token means expired
         return;
       }
