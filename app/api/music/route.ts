@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const personalList = user.personalList || []
+    const personalList = user.personalLibrary || []
 
     // Optional: sort by title
     const sortedTracks = personalList.sort((a, b) => a.title.localeCompare(b.title))
