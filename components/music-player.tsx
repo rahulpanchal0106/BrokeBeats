@@ -79,6 +79,7 @@ export default function MusicPlayer() {
         }
         const data = await response.json()
         setTracks(data)
+        alert(`Tracks: ${data}`)
       } catch (err) {
         console.error('Error fetching tracks:', err)
         // Don't show error if we're offline, just use cached tracks
