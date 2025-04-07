@@ -77,7 +77,20 @@ useEffect(() => {
     console.log("Attempting to fetch tracks from /api/music");
     
     try {
-      const response = await fetch('/api/music');
+      // Get the authentication token from wherever you store it
+      // This could be localStorage, a cookie, your auth context, etc.
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      
+      const response = await fetch('/api/music', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       console.log("Fetch response status:", response.status);
       
       if (!response.ok) {
@@ -87,11 +100,12 @@ useEffect(() => {
       const data = await response.json();
       console.log("Tracks fetched successfully:", data);
       
-      if (!Array.isArray(data) || data.length === 0) {
+      if (Array.isArray(data) && data.length > 0) {
+        setTracks(data);
+      } else {
         console.warn("API returned empty or non-array data");
+        setTracks([]);
       }
-      
-      setTracks(data);
     } catch (err) {
       console.error('Error fetching tracks:', err);
       
@@ -106,6 +120,8 @@ useEffect(() => {
 
   fetchTracks();
 }, [isOffline]);
+  // Update the fetchTracks function in your useEffect:
+
   // Improved background image transition every 30 seconds when playing
   useEffect(() => {
     let interval: NodeJS.Timeout
