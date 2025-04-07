@@ -3,6 +3,9 @@ import fs from 'fs'
 import path from 'path'
 import * as mm from 'music-metadata'
 import { MongoClient } from 'mongodb'
+import { NextRequest } from 'next/server'
+import { MongoClient } from 'mongodb'
+
 
 interface Metadata {
   [key: string]: {
@@ -55,51 +58,56 @@ async function fetchTrackData(videoId: string) {
   return trackData
 }
 
-export async function GET() {
-  try {
-    const musicDir = path.join(process.cwd(), 'public', 'music')
-    const metadataPath = path.join(musicDir, 'metadata.json')
 
-    // Read metadata if it exists
-    let metadata: Metadata = {}
-    try {
-      if (fs.existsSync(metadataPath)) {
-        metadata = JSON.parse(fs.readFileSync(metadataPath, 'utf-8'))
-      }
-    } catch (error) {
-      console.error('Error reading metadata:', error)
+const uri = process.env.MONGODB_URI!
+
+export async function GET(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Read all files in the music directory
-    const files = fs.readdirSync(musicDir)
-    const musicFiles = (await Promise.all(files
-      .filter(file => file.endsWith('.mp3'))
-      .map(async file => {
-        const filePath = path.join(musicDir, file)
-        const stats = fs.statSync(filePath)
-        const fileMetadata = metadata[file] || { title: file.replace('.mp3', ''), artist: 'Unknown Artist' }
-        
-        // Fetch track data from the database
-        const trackData = await fetchTrackData(file.replace('.mp3', ''));
-        console.log("&&&&&&&&&& ",trackData)
-        
-        return {
-          id: parseInt(file.replace('.mp3', '')),
-          title: trackData?.title || fileMetadata.title,
-          artist: trackData?.author || fileMetadata.artist,
-          bitrate: trackData?.bitrate || "NaN",
-          duration: trackData?.length || 0, // This will be updated by the client when the audio loads
-          url: `/music/${file}`
-        }
-      })
-    )).sort((a, b) => a.title.localeCompare(b.title))
+    const token = authHeader.split(' ')[1]
 
-    return NextResponse.json(musicFiles)
+    // Decode token to get user ID (implement your logic here)
+    const userId = await getUserIdFromToken(token) // You'll need this function
+    if (!userId) {
+      return NextResponse.json({ error: 'Invalid token' }, { status: 403 })
+    }
+
+    const client = await MongoClient.connect(uri)
+    const db = client.db()
+    const user = await db.collection('users').findOne({ spotifyId: userId })
+
+    if (!user) {
+      client.close()
+      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    }
+
+    const personalList = user.personalList || []
+
+    // Optional: sort by title
+    const sortedTracks = personalList.sort((a, b) => a.title.localeCompare(b.title))
+
+    client.close()
+    return NextResponse.json(sortedTracks)
   } catch (error) {
-    console.error('Error:', error)
-    return NextResponse.json({ 
-      error: 'Failed to list music files',
+    console.error('Error fetching music list:', error)
+    return NextResponse.json({
+      error: 'Failed to fetch user tracks',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
-} 
+}
+
+// Dummy example — implement according to your token system
+async function getUserIdFromToken(token: string): Promise<string | null> {
+  // Example for token containing user ID as base64 JSON: { "id": "abc123" }
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.id || null
+  } catch {
+    return null
+  }
+}
