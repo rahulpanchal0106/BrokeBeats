@@ -84,6 +84,8 @@ useEffect(() => {
       if (!token) {
         throw new Error('No authentication token found');
       }
+
+    alert(`sending token to /music ${token}`);
       
       const response = await fetch('/api/music', {
         headers: {
