@@ -58,12 +58,21 @@ async function fetchTrackData(videoId: string) {
   return trackData
 }
 
-
+// Dummy example — implement according to your token system
+async function getUserIdFromToken(token: string): Promise<string | null> {
+  // Example for token containing user ID as base64 JSON: { "id": "abc123" }
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.id || null
+  } catch {
+    return null
+  }
+}
 //onst uri = process.env.MONGODB_URI!
 
 export async function GET(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization')
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -101,13 +110,4 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// Dummy example — implement according to your token system
-async function getUserIdFromToken(token: string): Promise<string | null> {
-  // Example for token containing user ID as base64 JSON: { "id": "abc123" }
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.id || null
-  } catch {
-    return null
-  }
-}
+
