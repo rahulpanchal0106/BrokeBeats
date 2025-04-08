@@ -121,7 +121,7 @@ useEffect(() => {
   };
 
   fetchTracks();
-}, [isOffline]);
+}, []);
   // Update the fetchTracks function in your useEffect:
 
   // Improved background image transition every 30 seconds when playing
