@@ -71,7 +71,7 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 //onst uri = process.env.MONGODB_URI!
 
 export async function GET(req: NextRequest) {
-  rerurn NextResponse.json({
+  return NextResponse.json({
     message: "foo"
   },{status:200});
   try {
