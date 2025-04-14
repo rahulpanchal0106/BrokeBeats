@@ -79,13 +79,14 @@ useEffect(() => {
     try {
       // Get the authentication token from wherever you store it
       // This could be localStorage, a cookie, your auth context, etc.
+      alert("RIGJT BEFORE THE TOKEN FETCH")
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      
+      alert(`sending token to /music ${token}`);
       if (!token) {
         throw new Error('No authentication token found');
       }
 
-    alert(`sending token to /music ${token}`);
+    
       
       const response = await fetch('/api/music', {
         headers: {
