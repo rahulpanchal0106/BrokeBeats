@@ -70,20 +70,16 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 }
 //onst uri = process.env.MONGODB_URI!
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   return NextResponse.json({
     message: "foo"
   },{status:200});
   try {
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.split(' ')[1]
+    const reqData = await req.body;
+    const userId = reqData.userId;
 
     // Decode token to get user ID (implement your logic here)
-    const userId = await getUserIdFromToken(token) // You'll need this function
+    //onst userId = await getUserIdFromToken(token) // You'll need this function
     if (!userId) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 403 })
     }
