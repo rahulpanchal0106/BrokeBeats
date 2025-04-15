@@ -80,7 +80,8 @@ useEffect(() => {
       // Get the authentication token from wherever you store it
       // This could be localStorage, a cookie, your auth context, etc.
       alert("RIGJT BEFORE THE TOKEN FETCH")
-      const userData = localStorage.getItem('spotify_user') || sessionStorage.getItem('authToken');
+      let userData = localStorage.getItem('spotify_user') || sessionStorage.getItem('authToken');
+      userData = JSON.parse(userData);
       const userId = userData.id;
 
       alert(`sending token to /music ${userData}, $$$$$$$ ${userId}`);
