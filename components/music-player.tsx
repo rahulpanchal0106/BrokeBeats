@@ -90,12 +90,15 @@ useEffect(() => {
 
     
       
-      const response = await fetch(`/api/music`,{
-        method: "POST",
-        body:{
-           userId: userId
-        }
-      });
+      const response = await fetch(`/api/music`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    userId: userId
+  })
+});
       
       console.log("Fetch response status:", response.status);
       
