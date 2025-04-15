@@ -71,11 +71,9 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 //onst uri = process.env.MONGODB_URI!
 
 export async function POST(req: NextRequest) {
-  return NextResponse.json({
-    message: "foo"
-  },{status:200});
+ 
   try {
-    const reqData = await req.body;
+    const reqData = await req.json();
     const userId = reqData.userId;
 
     // Decode token to get user ID (implement your logic here)
