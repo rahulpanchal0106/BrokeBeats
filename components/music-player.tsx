@@ -80,19 +80,17 @@ useEffect(() => {
       // Get the authentication token from wherever you store it
       // This could be localStorage, a cookie, your auth context, etc.
       alert("RIGJT BEFORE THE TOKEN FETCH")
-      const token = localStorage.getItem('spotify_user') || sessionStorage.getItem('authToken');
-      alert(`sending token to /music ${token}`);
-      if (!token) {
+      const userData = localStorage.getItem('spotify_user') || sessionStorage.getItem('authToken');
+      const userId = userData.id;
+
+      alert(`sending token to /music ${userData}, $$$$$$$ ${userId}`);
+      if (!userId) {
         throw new Error('No authentication token found');
       }
 
     
       
-      const response = await fetch('/api/music', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(`/api/music/${userId}`);
       
       console.log("Fetch response status:", response.status);
       
