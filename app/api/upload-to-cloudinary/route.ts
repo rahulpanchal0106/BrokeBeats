@@ -12,35 +12,45 @@ export async function POST(request: Request) {
     const file = await request.blob();
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
+    
+    console.log("Uploading file:", { size: file.size, type: file.type });
+    
     // Use promise to handle the upload stream
     const result = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          resource_type: 'auto',
+          resource_type: 'video',  // Try using 'raw' instead of 'video'
           folder: 'music',
+          public_id: `music_${Date.now()}`,  // Generate unique ID
+          access_mode: 'public',
+          format: 'mp3'  // Force the format to MP3
         },
         (error, result) => {
           if (error) {
+            console.error("Cloudinary upload error details:", error);
             reject(error);
             return;
           }
           resolve(result);
         }
       );
-
+      
       // Write buffer to upload stream
       uploadStream.end(buffer);
     });
-
-    return NextResponse.json({ 
-      success: true, 
+    
+    console.log("Upload successful:", result);
+    
+    return NextResponse.json({
+      success: true,
       message: 'File uploaded successfully',
-      result 
+      result
     });
-
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Failed to upload file', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

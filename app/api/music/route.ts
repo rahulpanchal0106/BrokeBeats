@@ -4,6 +4,10 @@ import path from 'path'
 import * as mm from 'music-metadata'
 import { MongoClient } from 'mongodb'
 import { NextRequest } from 'next/server'
+import { getUserBySpotifyId } from '@/app/lib/db'
+import { connectToDatabase } from '@/app/lib/db'
+import { User } from '@/app/models/User'
+import { Track } from '@/app/types/music'
 //mport { MongoClient } from 'mongodb'
 
 
@@ -71,39 +75,37 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 //onst uri = process.env.MONGODB_URI!
 
 export async function POST(req: NextRequest) {
- 
   try {
     const reqData = await req.json();
     const userId = reqData.userId;
 
-    // Decode token to get user ID (implement your logic here)
-    //onst userId = await getUserIdFromToken(token) // You'll need this function
     if (!userId) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 403 })
+      return NextResponse.json({ error: 'Invalid token' }, { status: 403 });
     }
 
-    const client = await MongoClient.connect(uri)
-    const db = client.db()
-    const user = await db.collection('users').findOne({ spotifyId: userId })
-
+    await connectToDatabase();
+    const user = await User.findOne({ spotifyId: userId });
+    const userObj = user.toObject ? user.toObject() : JSON.parse(JSON.stringify(user));
+    console.log("🔥🔥🔥 ",userObj);
     if (!user) {
-      client.close()
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
+    
+    const personalList = userObj.personalLibrary || [];
+    
+    // Sort tracks by title
+  //   const sortedTracks = personalList.sort((a: Track, b: Track) => 
+  //     a.title.localeCompare(b.title)
+  // );
+  console.log("🥲🥲🥲 ",userObj.personalLibrary);
 
-    const personalList = user.personalLibrary || []
-
-    // Optional: sort by title
-    const sortedTracks = personalList.sort((a, b) => a.title.localeCompare(b.title))
-
-    client.close()
-    return NextResponse.json(sortedTracks)
+    return NextResponse.json({tracks: personalList});
   } catch (error) {
-    console.error('Error fetching music list:', error)
+    console.error('Error fetching music list:', error);
     return NextResponse.json({
       error: 'Failed to fetch user tracks',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    }, { status: 500 });
   }
 }
 

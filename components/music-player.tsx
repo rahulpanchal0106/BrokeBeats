@@ -79,27 +79,27 @@ useEffect(() => {
     try {
       // Get the authentication token from wherever you store it
       // This could be localStorage, a cookie, your auth context, etc.
-      alert("RIGJT BEFORE THE TOKEN FETCH")
-      let userData = localStorage.getItem('spotify_user') || sessionStorage.getItem('authToken');
-      userData = JSON.parse(userData);
-      const userId = userData.id;
-
-      alert(`sending token to /music ${userData}, $$$$$$$ ${userId}`);
-      if (!userId) {
-        throw new Error('No authentication token found');
+      const userDataStr = localStorage.getItem('spotify_user') || sessionStorage.getItem('authToken');
+      if (!userDataStr) {
+        throw new Error('No authentication data found');
       }
 
-    
-      
+      const userData = JSON.parse(userDataStr);
+      const userId = userData?.id;
+
+      if (!userId) {
+        throw new Error('No user ID found');
+      }
+
       const response = await fetch(`/api/music`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    userId: userId
-  })
-});
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId: userId
+        })
+      });
       
       console.log("Fetch response status:", response.status);
       
@@ -107,13 +107,13 @@ useEffect(() => {
         throw new Error(`Failed to fetch music files: ${response.status}`);
       }
       
-      const data = await response.json();
-      console.log("Tracks fetched successfully:", data);
+      const { tracks: trackData } = await response.json();
+      console.log("Tracks fetched successfully:", trackData);
       
-      if (Array.isArray(data) && data.length > 0) {
-        setTracks(data);
+      if (Array.isArray(trackData) && trackData.length > 0) {
+        setTracks(trackData);
       } else {
-        console.warn("API returned empty or non-array data");
+        console.warn("API returned empty or invalid tracks data");
         setTracks([]);
       }
     } catch (err) {
@@ -121,7 +121,7 @@ useEffect(() => {
       
       // Don't show error if we're offline, just use cached tracks
       if (!isOffline) {
-        setError(`Failed to load music library: ${err.message}`);
+        setError(`Failed to load music library: ${err instanceof Error ? err.message : 'Unknown error'}`);
       }
     } finally {
       setIsLoading(false);
