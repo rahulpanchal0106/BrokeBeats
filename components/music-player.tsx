@@ -18,18 +18,18 @@ interface Track {
 
 // Background images with placeholder API
 const backgroundImages = [
-  "https://img.freepik.com/premium-photo/illustration-girl-sitting-balcony-with-her-cat-watching-sunset_1260208-167.jpg?semt=ais_hybrid?height=1080&width=1920",
-  "https://wallpapers.com/images/hd/lofi-background-s07yfutvxbplhmng.jpg",
-  "https://c4.wallpaperflare.com/wallpaper/908/34/383/lofi-digital-anthro-hd-wallpaper-preview.jpg",
-  "https://a-static.besthdwallpaper.com/balcony-lofi-wallpaper-1600x600-106546_84.jpg",
-  "/bg/ghibli-1.gif",
-  "/bg/ghibly-3.gif",
-  "/bg/lofi-1.gif",
-  "/bg/ghibli-2.jpg",
-  "/bg/pixal-1.jpg",
-  "/bg/pixel-2.jpg",
-  "/bg/pixel-3.jpg",
-  "/bg/pixel5.gif",
+  // "https://img.freepik.com/premium-photo/illustration-girl-sitting-balcony-with-her-cat-watching-sunset_1260208-167.jpg?semt=ais_hybrid?height=1080&width=1920",
+  // "https://wallpapers.com/images/hd/lofi-background-s07yfutvxbplhmng.jpg",
+  // "https://c4.wallpaperflare.com/wallpaper/908/34/383/lofi-digital-anthro-hd-wallpaper-preview.jpg",
+  // "https://a-static.besthdwallpaper.com/balcony-lofi-wallpaper-1600x600-106546_84.jpg",
+  // "/bg/ghibli-1.gif",
+  // "/bg/ghibly-3.gif",
+  // "/bg/lofi-1.gif",
+  // "/bg/ghibli-2.jpg",
+  // "/bg/pixal-1.jpg",
+  // "/bg/pixel-2.jpg",
+  // "/bg/pixel-3.jpg",
+  // "/bg/pixel5.gif",
   "/bg/sharp-1.gif",
 ]
 

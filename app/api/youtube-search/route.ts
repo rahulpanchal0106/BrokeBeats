@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import YouTube, { Video, SearchOptions } from 'youtube-sr'; // Import youtube-sr with types
 
 export const runtime = 'nodejs'; // Explicitly set runtime to nodejs
 
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
           `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${process.env.YOUTUBE_API_KEY}`
         );
         const data = await response.json();
-        
+
         if (data.items && data.items.length > 0) {
           return NextResponse.json({
             url: `https://www.youtube.com/watch?v=${data.items[0].id.videoId}`
@@ -29,20 +30,23 @@ export async function GET(request: Request) {
       }
     }
 
-    // Dynamic import
-    const { default: yts } = await import('yt-search');
-    
-    const result = await yts(query + ' official audio');
-    const video = result.videos[0];
+    // Use youtube-sr for unofficial search
+    const searchOptions = {
+      limit: 1,
+      type: 'all' as const
+    };
+    const videos = await YouTube.search(query + ' official audio', searchOptions);
 
-    if (!video) {
+    if (!videos || videos.length === 0) {
       return NextResponse.json({ error: 'No results found' }, { status: 404 });
     }
+
+    const video = videos[0] as Video;
 
     return NextResponse.json({
       url: video.url,
       title: video.title,
-      duration: video.duration
+      duration: video.durationFormatted
     });
 
   } catch (error) {
@@ -52,4 +56,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
