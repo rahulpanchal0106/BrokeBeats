@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import yts from 'yt-search';
+
+export const runtime = 'nodejs'; // Explicitly set runtime to nodejs
 
 export async function GET(request: Request) {
   try {
@@ -28,7 +29,9 @@ export async function GET(request: Request) {
       }
     }
 
-    // Fall back to yt-search
+    // Dynamic import
+    const { default: yts } = await import('yt-search');
+    
     const result = await yts(query + ' official audio');
     const video = result.videos[0];
 

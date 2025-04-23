@@ -22,16 +22,17 @@ const nextConfig = {
     parallelServerCompiles: true,
   },
   webpack: (config, { isServer }) => {
-    if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        fs: false,
-        net: false,
-        tls: false,
-      };
-    }
     if (isServer) {
-      config.externals = [...(config.externals || []), 'cheerio'];
+      config.resolve = {
+        ...config.resolve,
+        preferRelative: true,
+        alias: {
+          ...config.resolve?.alias,
+        },
+        fallback: {
+          ...config.resolve?.fallback,
+        }
+      };
     }
     return config;
   },
@@ -59,4 +60,4 @@ function mergeConfig(nextConfig, userConfig) {
   }
 }
 
-export default nextConfig 
+export default nextConfig

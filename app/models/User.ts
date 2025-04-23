@@ -11,4 +11,14 @@ const userSchema = new mongoose.Schema<UserType>({
   }]
 });
 
-export const User = mongoose.models.User || mongoose.model<UserType>('User', userSchema); 
+export const User = mongoose.models.User || mongoose.model<UserType>('User', userSchema);
+
+export async function createUser(userData: Partial<UserType>) {
+  const user = new User(userData);
+  await user.save();
+  return user._id;
+}
+
+export async function findUserBySpotifyId(spotifyId: string) {
+  return await User.findOne({ spotifyId });
+} 
