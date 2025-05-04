@@ -65,7 +65,7 @@ export async function GET(request: Request) {
             { artist: { $regex: query, $options: 'i' } }
           ]
         })
-        .limit(20)
+        //.limit(20)
         .toArray();
       console.log(`[DB] Regex search results count: ${regexResults.length}`);
       results = regexResults;
