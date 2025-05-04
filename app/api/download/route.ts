@@ -225,3 +225,151 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: 'Failed to initiate download' }, { status: 500 });
   }
 } 
+
+import { MongoClient, ServerApiVersion } from 'mongodb';
+
+// MongoDB connection
+const uri = process.env.MONGODB_URI || 'mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>?retryWrites=true&w=majority';
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+
+interface Track {
+  videoId: string;
+  filename: string;
+  title: string;
+  artist: string;
+  status: 'completed' | 'processing';
+  filepath: string;
+  createdAt: Date;
+}
+
+export async function PUT(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const url = searchParams.get('url');
+
+    if (!url) {
+      return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    }
+
+    if (ongoingDownloads.has(url)) {
+      return NextResponse.json({
+        error: 'This video is already being processed',
+        details: 'Please wait for the current download to complete',
+      }, { status: 409 });
+    }
+
+    const videoId = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?]+)/)?.[1];
+    if (!videoId) {
+      return NextResponse.json({
+        error: 'Invalid YouTube URL',
+        details: 'Please provide a valid YouTube video URL',
+      }, { status: 400 });
+    }
+
+    const filename = `${videoId}.mp3`;
+    ongoingDownloads.add(url);
+
+    try {
+      // Get video info
+      const infoResponse = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+      if (!infoResponse.ok) {
+        const errorText = await infoResponse.text();
+        console.error('Info API error:', errorText);
+        return NextResponse.json({
+          error: 'Failed to get video info',
+          details: errorText,
+        }, { status: 500 });
+      }
+
+      const info = await infoResponse.json();
+      const title = info.title || 'Unknown Title';
+      const artist = info.author_name || 'Unknown Artist';
+
+      // Check file existence in MongoDB
+      await client.connect();
+      const db = client.db('music_db'); // Replace with your database name
+      const collection = db.collection<Track>('tracks'); // Replace with your collection name
+
+      const track = await collection.findOne({filepath: {
+    $regex: videoId, 
+    $options: 'i'    
+  }});
+      if (track) {
+        return NextResponse.json({
+          message: track.status === 'completed' ? 'File already exists' : 'File is being processed',
+          filename: track.filename,
+          title: track.title,
+          artist: track.artist,
+          url: track.filepath,
+          status: track.status,
+          exists: true,
+        },{ status: 200 });
+      }
+
+      // Start download via converter API
+      const downloadUrl = `${process.env.CONVERTER_SERVER_URL || 'https://expressions-quilt-scholar-personals.trycloudflare.com'}/download?url=${encodeURIComponent(url)}`;
+      console.log('Requesting download:', downloadUrl);
+      const response = fetch(downloadUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+      });
+
+      //const data = await response.json();
+      //console.log('Download response:', data);
+
+      //if (!response.ok) {
+        //console.error('Download API error:', data);
+        //return NextResponse.json({
+         // error: 'Failed to start download',
+          //details: data.error || data.message || 'Unknown error',
+        //}, { status: 500 });
+     // }
+
+      // Assume converter API adds track to MongoDB
+      //const trackData: Track = {
+       // videoId,
+       /// filename: data.filename || filename,
+        //title,
+        //artist,
+      //  status: data.message?.includes('already exists') ? 'completed' : 'processing',
+       // filepath: `/files/${data.filename || filename}`,
+      //  createdAt: new Date(),
+      //};
+
+      // Upsert track to ensure it’s in MongoDB (in case converter API fails to add)
+      //await collection.updateOne(
+       // { videoId },
+        //{ $set: trackData },
+        //{ upsert: true }
+      //);
+
+      return NextResponse.json({
+        message: 'Download started',
+       // filename: data.filename || filename,
+        //title,
+        //artist,
+        //url: `/files/${data.filename || filename}`,
+        //status: data.message?.includes('already exists') ? 'completed' : 'processing',
+        //exists: data.message?.includes('already exists'),
+      }, { status: 200 });
+
+    } finally {
+      ongoingDownloads.delete(url);
+      await client.close();
+    }
+  } catch (error) {
+    console.error('Download error:', error);
+    return NextResponse.json({
+      error: 'Failed to initiate download',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    }, { status: 500 });
+  }
+}
