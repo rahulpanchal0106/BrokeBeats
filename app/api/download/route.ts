@@ -313,7 +313,8 @@ export async function PUT(request: Request) {
       }
 
       // Start download via converter API
-      const downloadUrl = `${process.env.CONVERTER_SERVER_URL || 'https://expressions-quilt-scholar-personals.trycloudflare.com'}/download?url=${encodeURIComponent(url)}`;
+     /// const downloadUrl = `${process.env.CONVERTER_SERVER_URL || 'https://expressions-quilt-scholar-personals.trycloudflare.com'}/download?url=${encodeURIComponent(url)}`;
+      const downloadUrl = `https://hollow-persian-murphy-exit.trycloudflare.com/download?url=${encodeURIComponent(url)}`;
       console.log('Requesting download:', downloadUrl);
       const response = fetch(downloadUrl, {
         method: 'GET',
