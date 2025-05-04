@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     const textResults = await collection
       .find({ $text: { $search: query } }, { projection: { score: { $meta: "textScore" } } })
       .sort({ score: { $meta: "textScore" } })
-      .limit(20)
+      //.limit(20)
       .toArray();
     console.log(`[DB] Text search results count: ${textResults.length}`);
     
