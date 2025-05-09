@@ -293,7 +293,7 @@ export async function PUT(request: Request) {
 
       // Check file existence in MongoDB
       await client.connect();
-      const db = client.db('music_db'); // Replace with your database name
+      const db = client.db(''); // Replace with your database name
       const collection = db.collection<Track>('tracks'); // Replace with your collection name
 
       const track = await collection.findOne({filepath: {
@@ -316,7 +316,7 @@ export async function PUT(request: Request) {
      /// const downloadUrl = `${process.env.CONVERTER_SERVER_URL || 'https://expressions-quilt-scholar-personals.trycloudflare.com'}/download?url=${encodeURIComponent(url)}`;
       const downloadUrl = `https://advise-either-surgeons-fresh.trycloudflare.com/download?url=${url}`;
       console.log('Requesting download:', downloadUrl);
-      const response = fetch(downloadUrl, {
+      const response = await fetch(downloadUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
