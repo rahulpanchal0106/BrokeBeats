@@ -314,7 +314,7 @@ export async function PUT(request: Request) {
 
       // Start download via converter API
      /// const downloadUrl = `${process.env.CONVERTER_SERVER_URL || 'https://expressions-quilt-scholar-personals.trycloudflare.com'}/download?url=${encodeURIComponent(url)}`;
-      const downloadUrl = `https://advise-either-surgeons-fresh.trycloudflare.com/download?url=${url}`;
+      const downloadUrl = `${process.env.NEXT_PUBLIC_CONVERTER_API_BASE_URL}/download?url=${url}`;
       console.log('Requesting download:', downloadUrl);
       const response = await fetch(downloadUrl, {
         method: 'GET',
