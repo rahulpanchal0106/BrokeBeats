@@ -74,6 +74,21 @@ async function getUserIdFromToken(token: string): Promise<string | null> {
 }
 //onst uri = process.env.MONGODB_URI!
 
+export async function PATCH(){
+  try{
+    NextResponse.json({
+      convAPI: process.env.NEXT_PUBLIC_CONVERTER_API_BASE_URL,
+      status:200
+    })
+  }catch(e){
+    console.error("Error in /app/api/music(PATCH): ",e )
+    NextResponse.json({
+      status:500,
+      message:"Failed to fetch the env"
+    })
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const reqData = await req.json();
